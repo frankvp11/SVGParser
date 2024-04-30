@@ -1,5 +1,7 @@
 import xml.etree.ElementTree as ET
 from GraphicMaker.main import SVG, Circle, Rectangle, Line, NGon, Group, Polygon, PolyLine, Oval, Text
+from nicegui import ui
+
 
 def parse_svg(filename):
     tree = ET.parse(filename)
@@ -10,7 +12,7 @@ def generate_svg_from_element(element):
     if element.tag == "{http://www.w3.org/2000/svg}svg":
         width = float(element.attrib.get("width", 0))
         height = float(element.attrib.get("height", 0))
-        svg = SVG(width, height)
+        svg = SVG(width, height, viewBox={"x":0, "y":0, "width":width, "height":height})
         with svg:
             for child in element:
                 # print(child.tag)
@@ -86,7 +88,6 @@ root = parse_svg("svgSample.svg")
 svg_instance = generate_svg_from_element(root)
 
 
-from nicegui import ui
 
 with ui.row():
     svg_instance
@@ -159,16 +160,59 @@ def create_svg_tree(node, indent, depth):
         group = Group(20 + indent*20, 20 + depth*30)
         group.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
         with group:
-            Circle(20 + indent*20, 20 + depth*30, 20, fill="red", opacity=0.5)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
-            Text(5 +indent*20, 20 + depth*30, str(type(node)), font_size=10, centered=True)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
+            Rectangle(indent*20, 5+ depth*30, 60, 30, fill="red", opacity=0.5)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
+            Text(5 +indent*20, 20 + depth*30, str(node.__class__.__name__), font_size=10, centered=True)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
 
         return group, depth+1
         
 
 
+class SVGBox:
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.panning = False
+        self.scale = 1
+        self.viewBox = {"x":0, "y":0, "width":1000, "height":1000}
+        
+        with ui.row().style("width: 100vw; height: 60vh; border: 1px solid black;") as row:
+            row.on("wheel", self.on_scroll)
+            row.on("mousedown", lambda e : setattr(self, "panning", True))
+            row.on("mouseup", lambda e : setattr(self, "panning", False))
+            row.on("mousemove", self.on_mousemove)
+            self.svg = SVG(1000, 1000, self.viewBox).style("border: 1px solid black; width: 100%; height: 100%;")
+            with self.svg:
+                create_svg_tree(svg_instance, 0, 0)
+    
+    def on_mousemove(self, e):
+        e.args['preventDefault'] = False
+        if self.panning:
+            dx = e.args['movementX']
+            dy = e.args['movementY']
+            self.viewBox = {"x": self.viewBox["x"] - dx * self.scale, "y": self.viewBox["y"] - dy * self.scale, "width": self.viewBox["width"], "height": self.viewBox["height"]}
+            self.svg._props["viewBox"] = " ".join(([str(val) for val in self.viewBox.values()]))
+            self.svg.update()
 
-with SVG(1000, 1000):
-    create_svg_tree(svg_instance, 0, 0)
+    
+    def on_scroll(self, e):
+        width = self.viewBox["width"]
+        height = self.viewBox["height"]
+        mx = e.args['offsetX'] 
+        my = e.args['offsetY'] 
+        dw = width * 0.05 * (1 if e.args['deltaY'] > 0 else -1)
+        dh = height * 0.05 * (1 if e.args['deltaY'] > 0 else -1)
+        dx = dw * mx / 1000
+        dy = dh * my / 1000
+        self.viewBox = {"x": self.viewBox["x"] + dx, "y": self.viewBox["y"] + dy, "width": self.viewBox["width"] - dw, "height": self.viewBox["height"] - dh}
+        self.scale = 1000 / self.viewBox["width"]
+        self.svg._props["viewBox"] = " ".join(([str(val) for val in self.viewBox.values()]))
+        self.svg.update()
+
+ 
+
+SVGBox(0, 0, 1000, 1000)
 
 parser2(svg_instance)
 

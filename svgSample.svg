@@ -24,4 +24,25 @@
   <!-- Example Text -->
   <text x="50" y="250" font-family="Arial" font-size="20" fill="purple">Hello, SVG!</text>
 
+  <!-- Example Group -->
+  <g id="example_group" transform="translate(50,50)">
+    <!-- Rectangle -->
+    <rect x="0" y="0" width="100" height="50" fill="blue" stroke="black" stroke-width="2"/>
+    
+    <!-- Circle -->
+    <circle cx="50" cy="100" r="30" fill="red" stroke="green" stroke-width="3"/>
+
+    <!-- Ellipse -->
+    <ellipse cx="200" cy="100" rx="40" ry="20" fill="yellow" stroke="purple" stroke-width="2"/>
+
+    <!-- Line -->
+    <line x1="300" y1="50" x2="400" y2="100" stroke="orange" stroke-width="4"/>
+
+    <!-- Polyline -->
+    <polyline points="100,200 150,250 200,200 250,250" fill="none" stroke="black" stroke-width="2"/>
+
+    <!-- Polygon -->
+    <polygon points="300,200 350,250 400,200" fill="green" stroke="blue" stroke-width="2"/>
+  </g>
+
 </svg>
