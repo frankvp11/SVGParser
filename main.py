@@ -8,15 +8,20 @@ def parse_svg(filename):
     root = tree.getroot()
     return root
 
-def generate_svg_from_element(element):
+
+code = """"""
+
+def generate_svg_from_element(element, indent=0 ):
+    global code
     if element.tag == "{http://www.w3.org/2000/svg}svg":
         width = float(element.attrib.get("width", 0))
         height = float(element.attrib.get("height", 0))
         svg = SVG(width, height, viewBox={"x":0, "y":0, "width":width, "height":height})
+        code += "svg = SVG(width={}, height={}, viewBox={{'x':0, 'y':0, 'width':{}, 'height':{}}})\n".format(width, height, width, height)
+        code += "with svg:\n"
         with svg:
             for child in element:
-                # print(child.tag)
-                children = generate_svg_from_element(child)
+                children = generate_svg_from_element(child, indent+1)
                 svg.add_child(children)
         return svg
     
@@ -25,6 +30,7 @@ def generate_svg_from_element(element):
         y = float(element.attrib.get("cy", 0))
         r = float(element.attrib.get("r", 0))
         fill = element.attrib.get("fill", "black")
+        code += "  " * indent +  "Circle(x={}, y={}, radius={}, fill='{}')\n".format(x, y, r, fill)
         return Circle(x, y, r, fill=fill)
         
     if element.tag == "{http://www.w3.org/2000/svg}rect":
@@ -33,6 +39,7 @@ def generate_svg_from_element(element):
         width = float(element.attrib.get("width", 0))
         height = float(element.attrib.get("height", 0))
         fill = element.attrib.get("fill", "black")
+        code += "  " * indent +  "Rectangle(x={}, y={}, width={}, height={}, fill='{}')\n".format(x, y, width, height, fill)
         return Rectangle(x, y, width, height, fill=fill)
          
     if element.tag == "{http://www.w3.org/2000/svg}line": #     <line x1="300" y1="50" x2="400" y2="100" stroke="orange" stroke-width="4"/>
@@ -43,16 +50,19 @@ def generate_svg_from_element(element):
         y2 = float(element.attrib.get("y2", 0))
         stroke = element.attrib.get("stroke", "black")
         stroke_width = float(element.attrib.get("stroke-width", 1))
+        code += "  " * indent +  "Line(x1={}, y1={}, x2={}, y2={}, stroke='{}', stroke_width={})\n".format(x1, y1, x2, y2, stroke, stroke_width)
         return Line(x1, y1, x2, y2, stroke=stroke, stroke_width=stroke_width)
     
     if element.tag == "{http://www.w3.org/2000/svg}polygon":
         points = element.attrib.get("points", "")
         fill = element.attrib.get("fill", "black")
+        code += "  " * indent +  "Polygon(points='{}', fill='{}')\n".format(points, fill)
         return Polygon(points, fill=fill)
 
     if element.tag == "{http://www.w3.org/2000/svg}polyline":
         points = element.attrib.get("points", "")
         fill = element.attrib.get("fill", "black")
+        code += "  " * indent + "PolyLine(points='{}', fill='{}')\n".format(points, fill)
         return PolyLine(points, fill=fill)
     
     if element.tag == "{http://www.w3.org/2000/svg}ellipse":
@@ -61,18 +71,20 @@ def generate_svg_from_element(element):
         rx = float(element.attrib.get("rx", 0))
         ry = float(element.attrib.get("ry", 0))
         fill = element.attrib.get("fill", "black")
+        code += "  " * indent +  "Oval(x={}, y={}, rx={}, ry={}, fill='{}')\n".format(cx, cy, rx, ry, fill)
         return Oval(cx, cy, rx, ry, fill=fill)
     
     if element.tag == "{http://www.w3.org/2000/svg}g":
         x = float(element.attrib.get("x", 0))
         y = float(element.attrib.get("y", 0))
-
+        code += "  " * indent +  "group = Group(x={}, y={})\n".format(x, y)
+        code += "  " * indent +  "with group:\n"
         group = Group(x, y)
         with group:
             for child in element:
                 # print(child.tag)
                 
-                children = generate_svg_from_element(child)
+                children = generate_svg_from_element(child, indent+1)
                 group.add_child(children)
         return group
 
@@ -82,12 +94,13 @@ def generate_svg_from_element(element):
         font_size = float(element.attrib.get("font-size", 12))
 
         text = str(element.text)
+        code += "  " * indent + "Text(x={}, y={}, text='{}', font_size={})\n".format(x, y, text, font_size)
         return Text(x, y, text, font_size=font_size)
     
 root = parse_svg("svgSample.svg")
 svg_instance = generate_svg_from_element(root)
 
-
+# print(code)
 
 with ui.row():
     svg_instance
@@ -96,25 +109,17 @@ with ui.row():
 
 
 
-
-def parser2(node, indent=0):
-    if type(node) == SVG:
-        print("SVG")
-        for child in node.children:
-            parser2(child, indent+2)
-        return
-    elif type(node) == Group:
-        print(" "*indent + "Group")
-        for child in node.children:
-            parser2(child, indent+2)
-        return
-    else:
-        print(" "*indent + str(type(node)))
-        return
     
 def update_props(node, prop, value):
     node._props[prop] = value
+    # print(node.prop)
+    # print(prop)
+    setattr(node, prop, value)
+    # node.prop = value
     node.update()
+    svg_instance.update()
+    print(node._props)
+    # print(node.prop)
 
 def open_sidedrawer(node):
     print(node._props)
@@ -153,7 +158,7 @@ def create_svg_tree(node, indent, depth):
         
         for index, child in enumerate(node.children):
                 create_svg_tree(child, indent+1, depth+1+index)
-        return group, depth+len(node.children) -1
+        return group, depth+len(node.children) - 1
     
     #Case where it's not a group (ie, circle, elipse, rect, etc)
     else:
@@ -163,7 +168,7 @@ def create_svg_tree(node, indent, depth):
             Rectangle(indent*20, 5+ depth*30, 60, 30, fill="red", opacity=0.5)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
             Text(5 +indent*20, 20 + depth*30, str(node.__class__.__name__), font_size=10, centered=True)#.on("svg:pointerdown", lambda : open_sidedrawer(node), throttle=0.1)
 
-        return group, depth+1
+        return group, depth - 2
         
 
 
@@ -176,7 +181,7 @@ class SVGBox:
         self.panning = False
         self.scale = 1
         self.viewBox = {"x":0, "y":0, "width":1000, "height":1000}
-        
+        ui.button("Export SVG", on_click=self.export_svg)
         with ui.row().style("width: 100vw; height: 60vh; border: 1px solid black;") as row:
             row.on("wheel", self.on_scroll)
             row.on("mousedown", lambda e : setattr(self, "panning", True))
@@ -210,11 +215,13 @@ class SVGBox:
         self.svg._props["viewBox"] = " ".join(([str(val) for val in self.viewBox.values()]))
         self.svg.update()
 
- 
+    
+
+    def export_svg(self):
+        print(svg_instance.__str__())
 
 SVGBox(0, 0, 1000, 1000)
 
-parser2(svg_instance)
 
 ui.run()
 
