@@ -5,7 +5,7 @@ from CreationManager.createCircle import CreateCircle
 from CreationManager.createRectangle import CreateRectangle
 from CreationManager.createLine import CreateLine
 from CreationManager.createNgon import CreateNgon
-
+from CreationManager.createText import CreateText
 
 
 
@@ -43,7 +43,11 @@ class Canvas:
                     ngon_panel.clear()
                     self.manager = CreateNgon(self.svg)
                     self.last_shape = self.manager.shape
-
+            elif e.value == 'Text':
+                with text_panel:
+                    text_panel.clear()
+                    self.manager = CreateText(self.svg)
+                    self.last_shape = self.manager.shape
 
         
         with ui.splitter(value=10).style("height: 100%; width: 50%;") as splitter:
@@ -71,12 +75,9 @@ class Canvas:
                         print("Hello")
                     with ui.tab_panel(ngon) as ngon_panel:
                         print("Hello")
-                    # with ui.tab_panel(polygon):
-                    #     ui.label('Movies').classes('text-h4')
-                    #     ui.label('Content of movies')
-                    with ui.tab_panel(text):
-                        ui.label('Movies').classes('text-h4')
-                        ui.label('Content of movies')
+                    with ui.tab_panel(text) as text_panel:
+                        print("Hello")
+
 
 
 
